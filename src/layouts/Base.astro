@@ -1,0 +1,68 @@
+---
+import '../styles/global.css';
+import { u } from '../lib/url';
+import { SITE } from '../site.config.mjs';
+
+interface Props {
+  title?: string;
+  description?: string;
+  type?: 'website' | 'article';
+  jsonLd?: object;
+}
+const { title, description = SITE.description, type = 'website', jsonLd } = Astro.props;
+const fullTitle = title ? `${title} | ${SITE.name}` : SITE.name;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:type" content={type} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content={SITE.name} />
+    <meta property="og:locale" content="ko_KR" />
+    <link rel="icon" href={u("/favicon.svg")} type="image/svg+xml" />
+    <link rel="alternate" type="application/rss+xml" title={SITE.name} href={u("/rss.xml")} />
+    <link rel="sitemap" href={u("/sitemap-index.xml")} />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+    {SITE.googleSiteVerification && <meta name="google-site-verification" content={SITE.googleSiteVerification} />}
+    {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
+    {SITE.adsenseClient && (
+      <script async src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${SITE.adsenseClient}`} crossorigin="anonymous"></script>
+    )}
+  </head>
+  <body>
+    <header class="site">
+      <div class="wrap">
+        <a class="brand" href={u("/")}>{SITE.name}</a>
+        <nav>
+          <a href={u("/posts/")}>전체 글</a>
+          <a href={u("/about/")}>소개</a>
+        </nav>
+      </div>
+    </header>
+    <main>
+      <div class="wrap">
+        <slot />
+      </div>
+    </main>
+    <footer class="site">
+      <div class="wrap">
+        <nav>
+          <a href={u("/about/")}>소개</a>
+          <a href={u("/contact/")}>문의</a>
+          <a href={u("/privacy/")}>개인정보처리방침</a>
+          <a href={u("/terms/")}>이용약관</a>
+          <a href={u("/rss.xml")}>RSS</a>
+        </nav>
+        <div>© {new Date().getFullYear()} {SITE.name}</div>
+      </div>
+    </footer>
+  </body>
+</html>

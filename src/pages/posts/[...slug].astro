@@ -1,0 +1,65 @@
+---
+import { render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import AdSlot from '../../components/AdSlot.astro';
+import { getPublishedPosts, formatDate } from '../../lib/posts';
+import { SITE } from '../../site.config.mjs';
+import { u } from '../../lib/url';
+
+export async function getStaticPaths() {
+  const posts = await getPublishedPosts();
+  return posts.map((post) => ({ params: { slug: post.id }, props: { post, all: posts } }));
+}
+const { post, all } = Astro.props;
+const { Content, headings } = await render(post);
+const d = post.data;
+const toc = headings.filter((h) => h.depth === 2);
+const related = all
+  .filter((p) => p.id !== post.id && (p.data.category === d.category || p.data.tags.some((t) => d.tags.includes(t))))
+  .slice(0, 4);
+const url = new URL(u(`/posts/${post.id}/`), Astro.site).toString();
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: d.title,
+  description: d.description,
+  datePublished: d.pubDate.toISOString(),
+  dateModified: (d.updatedDate ?? d.pubDate).toISOString(),
+  author: { '@type': 'Person', name: SITE.author },
+  publisher: { '@type': 'Organization', name: SITE.name },
+  mainEntityOfPage: url,
+  inLanguage: 'ko-KR',
+};
+---
+<Base title={d.title} description={d.description} type="article" jsonLd={jsonLd}>
+  <article>
+    <span class="chip">{d.category}</span>
+    <h1>{d.title}</h1>
+    <p class="lead">{d.description}</p>
+    <div class="meta">
+      <time datetime={d.pubDate.toISOString()}>{formatDate(d.pubDate)}</time>
+      {d.updatedDate && <> · 최종 수정 <time datetime={d.updatedDate.toISOString()}>{formatDate(d.updatedDate)}</time></>}
+    </div>
+    {toc.length >= 3 && (
+      <nav class="toc" aria-label="목차">
+        <strong>목차</strong>
+        <ol>{toc.map((h) => <li><a href={`#${h.slug}`}>{h.text}</a></li>)}</ol>
+      </nav>
+    )}
+    <AdSlot />
+    <div class="prose"><Content /></div>
+    <AdSlot />
+    {d.sources.length > 0 && (
+      <section class="sources">
+        <h2>참고 자료</h2>
+        <ol>{d.sources.map((s) => <li><a href={s.url} rel="nofollow noopener" target="_blank">{s.title}</a></li>)}</ol>
+      </section>
+    )}
+  </article>
+  {related.length > 0 && (
+    <section class="related">
+      <h2>함께 읽으면 좋은 글</h2>
+      <ul>{related.map((p) => <li><a href={u(`/posts/${p.id}/`)}>{p.data.title}</a></li>)}</ul>
+    </section>
+  )}
+</Base>

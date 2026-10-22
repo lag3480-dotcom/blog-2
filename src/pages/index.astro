@@ -1,0 +1,16 @@
+---
+import Base from '../layouts/Base.astro';
+import { u } from '../lib/url';
+import PostList from '../components/PostList.astro';
+import { getPublishedPosts } from '../lib/posts';
+import { SITE } from '../site.config.mjs';
+const posts = (await getPublishedPosts()).slice(0, 12);
+---
+<Base>
+  <section>
+    <h1 style="font-size:1.6rem;margin:0 0 6px">{SITE.name}</h1>
+    <p class="meta" style="font-size:1rem;margin:0 0 12px">{SITE.description}</p>
+  </section>
+  <PostList posts={posts} />
+  {posts.length >= 12 && <p><a href={u("/posts/")}>전체 글 보기 →</a></p>}
+</Base>

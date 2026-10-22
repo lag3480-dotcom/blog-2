@@ -1,0 +1,16 @@
+---
+import Base from '../../layouts/Base.astro';
+import PostList from '../../components/PostList.astro';
+import { getPublishedPosts } from '../../lib/posts';
+const posts = await getPublishedPosts();
+const categories = [...new Set(posts.map((p) => p.data.category))];
+---
+<Base title="전체 글" description="블로그의 모든 글을 분야별로 모았습니다.">
+  <h1 style="font-size:1.6rem;margin:0 0 12px">전체 글</h1>
+  {categories.map((c) => (
+    <section>
+      <h2 style="font-size:1.15rem;margin:28px 0 0">{c}</h2>
+      <PostList posts={posts.filter((p) => p.data.category === c)} />
+    </section>
+  ))}
+</Base>
