@@ -7,7 +7,7 @@ export const SITE = {
   author: '머니 실전노트 편집팀',
   email: 'lag3480@naver.com',
   googleSiteVerification: 'HKdyn7BT6LlKKXJKs3e4AZxR9g_J0-d8mTCnnajAt5I', // 서치 콘솔 HTML 태그의 content 값
-  naverSiteVerification: '8b8d04a4f9963d5ac909f958b6f187ee549c97f4',
+  naverSiteVerification: ['344cf1e23f0759c84e35f22d5491cf9d0584a3b5', '8b8d04a4f9963d5ac909f958b6f187ee549c97f4'],
   // 쿠팡 파트너스 가입·애드센스 승인 후 true. 꺼져 있으면 글에 쿠팡 링크가 있을 때 빌드가 실패한다.
   coupangPartners: false,
   adsenseClient: '', // 예: 'ca-pub-0000000000000000' (승인 후 입력)
