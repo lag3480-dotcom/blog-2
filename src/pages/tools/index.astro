@@ -1,0 +1,16 @@
+---
+import Page from '../../layouts/Page.astro';
+import { u } from '../../lib/url';
+
+const tools = [
+  { href: '/tools/salary-calculator/', title: '2026년 연봉 실수령액 계산기', desc: '연봉과 부양가족 수로 4대 보험료, 소득세, 월 실수령액을 계산합니다.' },
+];
+---
+<Page title="계산기" description="연봉 실수령액 등 생활 금융 계산기 모음. 공식 요율과 국세청 자료로 계산합니다.">
+  <p>공식 요율과 국세청 자료를 그대로 넣어 만든 계산기입니다. 결과는 예상치이니 중요한 결정 전에는 해당 기관에 확인하세요.</p>
+  <ul class="tool-list">
+    {tools.map((t) => (
+      <li><h2><a href={u(t.href)}>{t.title}</a></h2><p>{t.desc}</p></li>
+    ))}
+  </ul>
+</Page>
