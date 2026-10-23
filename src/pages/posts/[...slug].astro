@@ -5,13 +5,15 @@ import AdSlot from '../../components/AdSlot.astro';
 import { getPublishedPosts, formatDate } from '../../lib/posts';
 import { SITE } from '../../site.config.mjs';
 import { u } from '../../lib/url';
+import { COUPANG_NOTICE } from '../../lib/affiliate.mjs';
 
 export async function getStaticPaths() {
   const posts = await getPublishedPosts();
   return posts.map((post) => ({ params: { slug: post.id }, props: { post, all: posts } }));
 }
 const { post, all } = Astro.props;
-const { Content, headings } = await render(post);
+const { Content, headings, remarkPluginFrontmatter } = await render(post);
+const affiliate = remarkPluginFrontmatter?.affiliate === 'coupang';
 const d = post.data;
 const toc = headings.filter((h) => h.depth === 2);
 const related = all
@@ -36,6 +38,7 @@ const jsonLd = {
     <span class="chip">{d.category}</span>
     <h1>{d.title}</h1>
     <p class="lead">{d.description}</p>
+    {affiliate && <p class="disclosure">{COUPANG_NOTICE}</p>}
     <div class="meta">
       <time datetime={d.pubDate.toISOString()}>{formatDate(d.pubDate)}</time>
       {d.updatedDate && <> · 최종 수정 <time datetime={d.updatedDate.toISOString()}>{formatDate(d.updatedDate)}</time></>}
