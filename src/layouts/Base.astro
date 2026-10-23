@@ -32,6 +32,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <link rel="sitemap" href={u("/sitemap-index.xml")} />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
     {SITE.googleSiteVerification && <meta name="google-site-verification" content={SITE.googleSiteVerification} />}
+    {SITE.naverSiteVerification && <meta name="naver-site-verification" content={SITE.naverSiteVerification} />}
     {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
     {SITE.adsenseClient && (
       <script async src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${SITE.adsenseClient}`} crossorigin="anonymous"></script>
