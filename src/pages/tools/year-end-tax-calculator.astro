@@ -1,0 +1,357 @@
+---
+import Base from '../../layouts/Base.astro';
+import { u } from '../../lib/url';
+import { SITE } from '../../site.config.mjs';
+import { calcYearEnd } from '../../lib/yearend.js';
+
+const title = '2026년 귀속 연말정산 환급 계산기 (예상 환급액·추가 납부액)';
+const description = '총급여, 부양가족, 카드 사용액, 연금저축·IRP, 월세, 의료비를 넣으면 2026년 귀속(2027년 1~2월) 연말정산 예상 환급액을 소득세법·조세특례제한법 산식 그대로 계산합니다. 근로소득공제부터 결정세액까지 계산 과정을 단계별로 보여 줍니다.';
+const updated = '2026년 11월 4일';
+
+const won = (n: number) => Math.round(n).toLocaleString('ko-KR');
+// 계산 예시: 총급여 5,000만원, 본인 1명
+const exIn = {
+  total: 50000000, family: 1, pension: 2375000, social: 2250000,
+  cards: { credit: 15000000, debit: 5000000, market: 0 }, cardKids: 0,
+  childCreditKids: 0, birth: 0, saving: 3000000, irp: 0, rent: 6000000,
+  medGeneral: 0, medSpecial: 0, paid: 2000000,
+};
+const ex = calcYearEnd(exIn);
+
+const sources = [
+  { title: '국가법령정보센터 - 소득세법 제47조 (근로소득공제), 시행 2026.1.1.', url: 'https://www.law.go.kr/LSW/lsLawLinkInfo.do?lsJoLnkSeq=1001060719&lsId=001565&chrClsCd=010202&print=print' },
+  { title: '국가법령정보센터 - 소득세법 시행규칙 별지 제40호서식(1) (종합소득세 기본세율표), 개정 2026.3.20.', url: 'https://www.law.go.kr/LSW//flDownload.do?gubun=&flSeq=164441487&bylClsCd=110202' },
+  { title: '국가법령정보센터 - 소득세법 제59조 (근로소득세액공제)', url: 'https://www.law.go.kr/LSW/lsLawLinkInfo.do?lsJoLnkSeq=1000819707&chrClsCd=010202' },
+  { title: '국가법령정보센터 - 소득세법 제59조의2 (자녀세액공제) 및 부칙 <법률 제21548호, 2026.4.21.>', url: 'https://www.law.go.kr/LSW/lsLawLinkInfo.do?lsJoLnkSeq=1000819889&chrClsCd=010202' },
+  { title: '국가법령정보센터 - 소득세법 제59조의4 (특별세액공제: 의료비, 표준세액공제)', url: 'https://www.law.go.kr/LSW/lsLawLinkInfo.do?lsJoLnkSeq=1000667082&chrClsCd=010202' },
+  { title: '국가법령정보센터 - 조세특례제한법 제126조의2 (신용카드 등 사용금액에 대한 소득공제), 시행 2026.9.18.', url: 'https://www.law.go.kr/LSW/lsLawLinkInfo.do?lsJoLnkSeq=1001060529&chrClsCd=010202&lsId=001584&print=print' },
+  { title: '국가법령정보센터 - 조세특례제한법 제95조의2 (월세액에 대한 세액공제)', url: 'https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsJoLnkSeq=1000027473' },
+];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: '2026년 귀속 연말정산 환급 계산기',
+  url: new URL('/tools/year-end-tax-calculator/', SITE.url).toString(),
+  applicationCategory: 'FinanceApplication',
+  operatingSystem: 'Any',
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'KRW' },
+  inLanguage: 'ko',
+};
+---
+<Base title={title} description={description} jsonLd={jsonLd}>
+  <article>
+    <div class="meta"><a href={u('/tools/')}>계산기</a></div>
+    <h1>{title}</h1>
+    <div class="meta">기준: 2026년 귀속 (2027년 1~2월 연말정산) · 최종 수정 {updated}</div>
+
+    <form class="calc" id="ye-form" autocomplete="off">
+      <h2>1. 급여와 이미 낸 세금</h2>
+      <label>
+        <span>총급여 (연간, 비과세 제외, 원)</span>
+        <input id="total" inputmode="numeric" value="50,000,000" />
+        <small id="total-hint">연봉에서 식대 등 비과세를 뺀 금액입니다.</small>
+      </label>
+      <label>
+        <span>올해 낸 소득세 합계 (원, 지방소득세 제외)</span>
+        <input id="paid" inputmode="numeric" placeholder="모르면 비워 두세요" />
+        <small id="paid-hint">급여명세서의 소득세를 1년 치 더한 금액입니다. 비워 두면 간이세액표(100%)로 추정합니다.</small>
+      </label>
+
+      <h2>2. 가족</h2>
+      <div class="row2">
+        <label>
+          <span>기본공제 인원 (본인 포함)</span>
+          <select id="family">
+            {Array.from({ length: 11 }, (_, i) => <option value={i + 1}>{i + 1}명</option>)}
+          </select>
+        </label>
+        <label>
+          <span>그중 20세 이하 자녀</span>
+          <select id="kids20">
+            {Array.from({ length: 8 }, (_, i) => <option value={i}>{i}명</option>)}
+          </select>
+        </label>
+      </div>
+      <div class="row2">
+        <label>
+          <span>그중 2006~2016년생 자녀</span>
+          <select id="kidsCredit">
+            {Array.from({ length: 8 }, (_, i) => <option value={i}>{i}명</option>)}
+          </select>
+          <small>자녀세액공제 대상 (2017년생 이후 제외)</small>
+        </label>
+        <label>
+          <span>2026년 출산·입양</span>
+          <select id="birth">
+            <option value="0">없음</option>
+            <option value="1">첫째</option>
+            <option value="2">둘째</option>
+            <option value="3">셋째 이상</option>
+          </select>
+        </label>
+      </div>
+
+      <h2>3. 4대 보험료 (연간)</h2>
+      <div class="row2">
+        <label>
+          <span>국민연금 본인 부담 (원)</span>
+          <input id="pension" inputmode="numeric" placeholder="자동 추정" />
+        </label>
+        <label>
+          <span>건강·장기요양·고용보험 본인 부담 (원)</span>
+          <input id="social" inputmode="numeric" placeholder="자동 추정" />
+        </label>
+      </div>
+      <small id="ins-hint"></small>
+
+      <h2>4. 카드 사용액 (연간)</h2>
+      <div class="row2">
+        <label><span>신용카드 (원)</span><input id="credit" inputmode="numeric" value="15,000,000" /></label>
+        <label><span>체크카드·현금영수증 (원)</span><input id="debit" inputmode="numeric" value="5,000,000" /></label>
+      </div>
+      <label><span>전통시장·대중교통 (원)</span><input id="market" inputmode="numeric" value="0" /></label>
+
+      <h2>5. 세액공제 항목 (연간)</h2>
+      <div class="row2">
+        <label><span>연금저축 납입액 (원)</span><input id="saving" inputmode="numeric" value="3,000,000" /></label>
+        <label><span>IRP 등 퇴직연금 납입액 (원)</span><input id="irp" inputmode="numeric" value="0" /></label>
+      </div>
+      <label>
+        <span>월세 (원, 무주택 세대주만)</span>
+        <input id="rent" inputmode="numeric" value="6,000,000" />
+      </label>
+      <div class="row2">
+        <label>
+          <span>의료비: 본인·65세 이상·6세 이하·장애인 (원)</span>
+          <input id="medSpecial" inputmode="numeric" value="0" />
+        </label>
+        <label>
+          <span>의료비: 그 밖의 가족 (원)</span>
+          <input id="medGeneral" inputmode="numeric" value="0" />
+        </label>
+      </div>
+    </form>
+
+    <div class="calc-result" aria-live="polite">
+      <div class="net">
+        <span id="r-label">예상 환급액</span>
+        <strong id="r-refund">-</strong>
+        <small>지방소득세 포함</small>
+      </div>
+      <table>
+        <tbody>
+          <tr><th>총급여</th><td id="r-total">-</td></tr>
+          <tr><th>− 근로소득공제</th><td id="r-eid">-</td></tr>
+          <tr><th>= 근로소득금액</th><td id="r-earned">-</td></tr>
+          <tr><th>− 인적공제 (1명당 150만원)</th><td id="r-personal">-</td></tr>
+          <tr><th>− 4대 보험료 공제</th><td id="r-ins">-</td></tr>
+          <tr><th>− 신용카드 등 소득공제</th><td id="r-card">-</td></tr>
+          <tr><th>= 과세표준</th><td id="r-base">-</td></tr>
+          <tr><th>산출세액 (기본세율)</th><td id="r-calc">-</td></tr>
+          <tr><th>− 근로소득세액공제</th><td id="r-eic">-</td></tr>
+          <tr><th>− 자녀·출산 세액공제</th><td id="r-child">-</td></tr>
+          <tr><th>− 연금계좌 세액공제</th><td id="r-pen">-</td></tr>
+          <tr><th id="r-special-label">− 월세·의료비 세액공제</th><td id="r-special">-</td></tr>
+          <tr class="total"><th>= 결정세액 (소득세)</th><td id="r-decided">-</td></tr>
+          <tr><th>기납부세액 (소득세)</th><td id="r-paid">-</td></tr>
+          <tr><th>지방소득세 차이</th><td id="r-local">-</td></tr>
+        </tbody>
+      </table>
+      <p class="note" id="r-note"></p>
+    </div>
+
+    <div class="prose">
+      <p>연말정산은 1년 동안 매달 미리 낸 소득세(<strong>기납부세액</strong>)와 실제로 내야 할 세금(<strong>결정세액</strong>)을 맞춰 보는 절차입니다. 미리 낸 세금이 더 많으면 차액을 돌려받고, 적으면 2월 급여에서 더 냅니다.</p>
+      <p>이 계산기는 <strong>2026년 귀속(2027년 1~2월 연말정산)</strong>에 적용되는 소득세법과 조세특례제한법의 산식을 그대로 넣었습니다. 근로소득만 있는 직장인을 기준으로, 공제 효과가 큰 항목을 중심으로 계산합니다.</p>
+
+      <h2>계산 순서</h2>
+      <ol>
+        <li><strong>총급여</strong>에서 <strong>근로소득공제</strong>를 빼 근로소득금액을 구합니다.</li>
+        <li>인적공제(1명당 150만원), 국민연금·건강보험 등 보험료, 신용카드 등 소득공제를 빼 <strong>과세표준</strong>을 구합니다.</li>
+        <li>과세표준에 기본세율을 곱해 <strong>산출세액</strong>을 구합니다.</li>
+        <li>근로소득세액공제, 자녀세액공제, 연금계좌·월세·의료비 세액공제를 빼 <strong>결정세액</strong>을 구합니다.</li>
+        <li>기납부세액 − 결정세액이 <strong>환급액</strong>입니다. 지방소득세(소득세의 10%)도 같은 방식으로 정산됩니다.</li>
+      </ol>
+
+      <h2>근로소득공제 (소득세법 제47조)</h2>
+      <table>
+        <thead><tr><th>총급여</th><th>공제액</th></tr></thead>
+        <tbody>
+          <tr><td>500만원 이하</td><td>총급여 × 70%</td></tr>
+          <tr><td>500만원 초과 1,500만원 이하</td><td>350만원 + 500만원 초과분 × 40%</td></tr>
+          <tr><td>1,500만원 초과 4,500만원 이하</td><td>750만원 + 1,500만원 초과분 × 15%</td></tr>
+          <tr><td>4,500만원 초과 1억원 이하</td><td>1,200만원 + 4,500만원 초과분 × 5%</td></tr>
+          <tr><td>1억원 초과</td><td>1,475만원 + 1억원 초과분 × 2%</td></tr>
+        </tbody>
+      </table>
+      <p>공제액은 2,000만원을 넘을 수 없습니다.</p>
+
+      <h2>기본세율 (2023년 이후 귀속)</h2>
+      <table>
+        <thead><tr><th>과세표준</th><th>세율</th><th>누진공제</th></tr></thead>
+        <tbody>
+          <tr><td>1,400만원 이하</td><td>6%</td><td>-</td></tr>
+          <tr><td>1,400만원 초과 5,000만원 이하</td><td>15%</td><td>126만원</td></tr>
+          <tr><td>5,000만원 초과 8,800만원 이하</td><td>24%</td><td>576만원</td></tr>
+          <tr><td>8,800만원 초과 1억5천만원 이하</td><td>35%</td><td>1,544만원</td></tr>
+          <tr><td>1억5천만원 초과 3억원 이하</td><td>38%</td><td>1,994만원</td></tr>
+          <tr><td>3억원 초과 5억원 이하</td><td>40%</td><td>2,594만원</td></tr>
+          <tr><td>5억원 초과 10억원 이하</td><td>42%</td><td>3,594만원</td></tr>
+          <tr><td>10억원 초과</td><td>45%</td><td>6,594만원</td></tr>
+        </tbody>
+      </table>
+
+      <h2>근로소득세액공제 (소득세법 제59조)</h2>
+      <p>산출세액 130만원 이하는 <strong>55%</strong>, 130만원 초과는 <strong>71만5천원 + 130만원 초과분 × 30%</strong>를 공제합니다. 다만 총급여에 따라 한도가 있습니다.</p>
+      <table>
+        <thead><tr><th>총급여</th><th>한도</th></tr></thead>
+        <tbody>
+          <tr><td>3,300만원 이하</td><td>74만원</td></tr>
+          <tr><td>3,300만원 초과 7,000만원 이하</td><td>74만원 − (총급여 − 3,300만원) × 8/1000, 최소 66만원</td></tr>
+          <tr><td>7,000만원 초과 1억2천만원 이하</td><td>66만원 − (총급여 − 7,000만원) × 1/2, 최소 50만원</td></tr>
+          <tr><td>1억2천만원 초과</td><td>50만원 − (총급여 − 1억2천만원) × 1/2, 최소 20만원</td></tr>
+        </tbody>
+      </table>
+
+      <h2>2026년 귀속 자녀세액공제: 9세 이상</h2>
+      <p>2026년 4월 21일 소득세법 개정으로 자녀세액공제 연령이 아동수당 확대에 맞춰 단계적으로 올라갑니다. 부칙에 따라 <strong>2026년 귀속은 9세 이상</strong>, 2027년 10세, 2028년 11세, 2029년 12세 이상이고, 이후 13세 이상이 됩니다. 또 <strong>2017년생은 이 단계 조정에서 빠져</strong> 2026년 귀속 공제를 받지 않습니다.</p>
+      <p>그래서 계산기는 <strong>2006~2016년생 자녀</strong>(20세 이하이면서 기본공제 대상)를 기준으로 1명 25만원, 2명 55만원, 3명부터 1명당 40만원을 더합니다. 2026년에 출산·입양했다면 첫째 30만원, 둘째 50만원, 셋째 이상 70만원이 추가됩니다.</p>
+
+      <h2>계산 예시: 총급여 5,000만원, 본인 1명</h2>
+      <p>국민연금 {won(exIn.pension)}원, 건강·장기요양·고용보험 {won(exIn.social)}원, 신용카드 1,500만원, 체크카드 500만원, 연금저축 300만원, 월세 600만원, 기납부 소득세 200만원을 가정합니다.</p>
+      <ol>
+        <li><strong>근로소득공제</strong>: 1,200만 + (5,000만 − 4,500만) × 5% = <strong>{won(ex.eid)}원</strong></li>
+        <li><strong>근로소득금액</strong>: 50,000,000 − {won(ex.eid)} = {won(ex.earned)}원</li>
+        <li><strong>신용카드 등 공제</strong>: 문턱 50,000,000 × 25% = 12,500,000원을 신용카드에서 먼저 뺍니다. (1,500만 − 1,250만) × 15% + 500만 × 30% = 375,000 + 1,500,000 = <strong>{won(ex.card.deduction)}원</strong></li>
+        <li><strong>과세표준</strong>: {won(ex.earned)} − 1,500,000 − {won(ex.insurance)} − {won(ex.card.deduction)} = <strong>{won(ex.taxBase)}원</strong></li>
+        <li><strong>산출세액</strong>: {won(ex.taxBase)} × 15% − 1,260,000 = <strong>{won(ex.calcTax)}원</strong></li>
+        <li><strong>근로소득세액공제</strong>: 715,000 + (3,202,500 − 1,300,000) × 30% = 1,285,750원이지만, 한도가 74만 − (5,000만 − 3,300만) × 8/1000 = 604,000원 → 최소 66만원이므로 <strong>{won(ex.eic)}원</strong></li>
+        <li><strong>연금저축</strong>: 3,000,000 × 15% = <strong>{won(ex.pen.credit)}원</strong></li>
+        <li><strong>월세</strong>: 6,000,000 × 17% = <strong>{won(ex.rent.credit)}원</strong> (표준세액공제 13만원보다 크므로 월세 공제 선택)</li>
+        <li><strong>결정세액</strong>: {won(ex.calcTax)} − {won(ex.eic)} − {won(ex.pen.credit)} − {won(ex.rent.credit)} = <strong>{won(ex.decided)}원</strong></li>
+        <li><strong>환급액</strong>: 소득세 2,000,000 − {won(ex.decided)} = {won(ex.paid - ex.decided)}원, 지방소득세 200,000 − {won(ex.decidedLocal)} = {won(ex.paidLocal - ex.decidedLocal)}원 → 합계 <strong>{won(ex.refund)}원</strong></li>
+      </ol>
+
+      <h2>계산기에 들어 있지 않은 항목</h2>
+      <p>다음 항목은 계산에 넣지 않았습니다. 해당되면 실제 환급액은 계산 결과보다 커질 수 있습니다.</p>
+      <ul>
+        <li>보장성 보험료, 교육비, 기부금 세액공제 (<a href={u('/posts/education-expense-tax-credit-2026/')}>교육비</a>, <a href={u('/posts/hometown-love-donation-tax-credit-2026/')}>고향사랑기부금</a> 글 참고)</li>
+        <li>장애인·경로우대·한부모·부녀자 추가공제, 주택자금 공제</li>
+        <li>도서·공연·영화 등 문화체육 사용분 (총급여 7천만원 이하 30%), 미숙아·난임 의료비 (20%·30%)</li>
+        <li><a href={u('/posts/sme-employee-income-tax-reduction/')}>중소기업 취업자 소득세 감면</a></li>
+      </ul>
+
+      <h2>결과가 회사 연말정산과 다를 때</h2>
+      <table>
+        <thead><tr><th>원인</th><th>확인할 것</th></tr></thead>
+        <tbody>
+          <tr><td>기납부세액을 추정값으로 계산</td><td>급여명세서의 소득세를 1년 치 더해 직접 넣으세요. 원천징수 비율을 80%·120%로 골랐다면 추정값과 크게 다릅니다.</td></tr>
+          <tr><td>보험료를 자동 추정값으로 계산</td><td>국민연금은 7월에 기준소득월액이 바뀌고, 건강보험료는 정산분이 있습니다. 명세서 합계를 넣으면 정확해집니다.</td></tr>
+          <tr><td>빠진 공제 항목</td><td>위 "들어 있지 않은 항목"에 해당하는지 확인하세요.</td></tr>
+          <tr><td>부양가족 요건 미충족</td><td>소득 요건(연 소득금액 100만원 이하)과 나이 요건을 <a href={u('/posts/dependent-deduction-requirements-2026/')}>부양가족 공제 요건</a>에서 확인하세요.</td></tr>
+        </tbody>
+      </table>
+
+      <h2>자주 묻는 질문</h2>
+      <h3>총급여는 어디서 확인하나요?</h3>
+      <p>작년 연말정산 후 받은 근로소득 원천징수영수증의 총급여 칸이나, 올해 급여명세서의 과세 급여를 더한 금액입니다. 식대(월 20만원 한도) 같은 비과세 수당은 빼고 넣습니다.</p>
+      <h3>맞벌이면 부양가족을 누구에게 올리나요?</h3>
+      <p>같은 가족을 두 사람이 중복으로 공제받을 수 없습니다. 각자의 총급여와 지출을 넣어 두 번 계산해 보고, 합계 환급액이 큰 쪽을 고르세요. 자세한 방법은 <a href={u('/posts/year-end-tax-checklist-2026/')}>연말정산 미리 준비 체크리스트</a>에 정리했습니다.</p>
+      <h3>결과가 마이너스로 나오면요?</h3>
+      <p>미리 낸 세금보다 결정세액이 커서 <strong>추가로 낼 세금</strong>이 있다는 뜻입니다. 남은 기간에 체크카드·현금영수증 사용, 연금저축·IRP 납입으로 줄일 수 있는지 살펴보세요.</p>
+
+      <p class="disclaimer">이 계산기는 법령 산식으로 계산한 <strong>예상치</strong>이며, 공제 요건 충족 여부와 회사의 정산 방식에 따라 실제 금액과 다를 수 있습니다. 정확한 금액은 국세청 홈택스 연말정산 미리보기·간소화 서비스, 회사 급여 담당자, 국세청 126 상담센터에 확인하세요.</p>
+    </div>
+
+    <section class="sources">
+      <h2>참고 자료</h2>
+      <ol>
+        {sources.map((s) => <li><a href={s.url} rel="nofollow noopener" target="_blank">{s.title}</a></li>)}
+      </ol>
+    </section>
+  </article>
+</Base>
+
+<script>
+  import table from '../../data/wage-tax-2026.json';
+  import { calcSalary } from '../../lib/salary.js';
+  import { calcYearEnd } from '../../lib/yearend.js';
+
+  const $ = (id: string) => document.getElementById(id) as HTMLInputElement;
+  const num = (s: string) => Number(String(s).replace(/[^0-9]/g, '')) || 0;
+  const fmt = (n: number) => Math.round(n).toLocaleString('ko-KR') + '원';
+  const NUM_IDS = ['total', 'paid', 'pension', 'social', 'credit', 'debit', 'market', 'saving', 'irp', 'rent', 'medSpecial', 'medGeneral'];
+
+  function formatInput(el: HTMLInputElement) {
+    const v = num(el.value);
+    el.value = v ? v.toLocaleString('ko-KR') : '';
+  }
+
+  function clampKids(id: string, max: number) {
+    const sel = $(id) as unknown as HTMLSelectElement;
+    for (const opt of Array.from(sel.options)) opt.disabled = Number(opt.value) > max;
+    if (Number(sel.value) > max) sel.value = String(Math.max(max, 0));
+    return Number(sel.value);
+  }
+
+  function update() {
+    const total = num($('total').value);
+    const family = Number($('family').value);
+    const kids20 = clampKids('kids20', family - 1);
+    const kidsCredit = clampKids('kidsCredit', kids20);
+
+    // 보험료·기납부세액 추정: 연봉 실수령액 계산기와 같은 요율·간이세액표(100%)
+    const s = calcSalary(table, { annual: total, nonTaxMonthly: 0, family, children: kidsCredit });
+    const estPension = s.pension * 12;
+    const estSocial = (s.health + s.care + s.employment) * 12;
+    const estPaid = s.incomeTax * 12;
+    const pension = $('pension').value ? num($('pension').value) : estPension;
+    const social = $('social').value ? num($('social').value) : estSocial;
+    const paidGiven = $('paid').value !== '';
+    const paid = paidGiven ? num($('paid').value) : estPaid;
+    $('ins-hint').textContent = `비워 두면 추정값을 씁니다: 국민연금 ${fmt(estPension)}, 건강·장기요양·고용 ${fmt(estSocial)}`;
+    $('paid-hint').textContent = paidGiven ? '입력한 금액으로 계산합니다.' : `비워 두면 간이세액표(100%) 추정값 ${fmt(estPaid)}으로 계산합니다.`;
+    $('total-hint').textContent = total ? `${(total / 10000).toLocaleString('ko-KR')}만원 · 연봉에서 비과세를 뺀 금액` : '연봉에서 식대 등 비과세를 뺀 금액입니다.';
+
+    const r = calcYearEnd({
+      total, family, pension, social,
+      cards: { credit: num($('credit').value), debit: num($('debit').value), market: num($('market').value) },
+      cardKids: kids20, childCreditKids: kidsCredit, birth: Number(($('birth') as unknown as HTMLSelectElement).value),
+      saving: num($('saving').value), irp: num($('irp').value), rent: num($('rent').value),
+      medGeneral: num($('medGeneral').value), medSpecial: num($('medSpecial').value), paid,
+    });
+
+    $('r-label').textContent = r.refund >= 0 ? '예상 환급액' : '예상 추가 납부액';
+    $('r-refund').textContent = fmt(Math.abs(r.refund));
+    $('r-total').textContent = fmt(r.total);
+    $('r-eid').textContent = fmt(r.eid);
+    $('r-earned').textContent = fmt(r.earned);
+    $('r-personal').textContent = fmt(r.personal);
+    $('r-ins').textContent = fmt(r.insurance);
+    $('r-card').textContent = fmt(r.card.deduction);
+    $('r-base').textContent = fmt(r.taxBase);
+    $('r-calc').textContent = fmt(r.calcTax);
+    $('r-eic').textContent = fmt(r.eic);
+    $('r-child').textContent = fmt(r.child);
+    $('r-pen').textContent = fmt(r.pen.credit);
+    $('r-special-label').textContent = r.useStandard ? '− 표준세액공제' : '− 월세·의료비 세액공제';
+    $('r-special').textContent = fmt(r.special);
+    $('r-decided').textContent = fmt(r.decided);
+    $('r-paid').textContent = fmt(r.paid);
+    $('r-local').textContent = fmt(r.paidLocal - r.decidedLocal);
+
+    const notes = [];
+    if (r.card.gross === 0 && total > 0) notes.push(`카드 사용액이 총급여의 25%(${fmt(r.card.threshold)})를 넘지 않아 카드 공제가 없습니다.`);
+    if (total > 80000000 && num($('rent').value) > 0) notes.push('총급여 8천만원 초과라 월세 세액공제를 받을 수 없습니다.');
+    if (r.calcTax > 0 && r.decided === 0) notes.push('세액공제가 산출세액보다 커서 결정세액이 0원입니다. 남는 공제는 돌려받지 못합니다.');
+    notes.push('원 단위 이하는 버려 표시합니다.');
+    $('r-note').textContent = notes.join(' ');
+  }
+
+  for (const id of NUM_IDS) {
+    $(id).addEventListener('input', (e) => { formatInput(e.target as HTMLInputElement); update(); });
+  }
+  for (const id of ['family', 'kids20', 'kidsCredit', 'birth']) $(id).addEventListener('change', update);
+  update();
+</script>
