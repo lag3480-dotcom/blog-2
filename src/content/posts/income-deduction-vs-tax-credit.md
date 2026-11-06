@@ -119,6 +119,8 @@ sources:
 - 소득공제: [부양가족 공제 요건](/posts/dependent-deduction-requirements-2026/), [신용카드 소득공제](/posts/credit-card-income-deduction-2026/)
 - 세액공제: [의료비](/posts/medical-expense-tax-credit-2026/), [교육비](/posts/education-expense-tax-credit-2026/), [연금저축·IRP](/posts/pension-savings-irp-tax-credit-2026/), [월세](/posts/monthly-rent-tax-credit-2026/)
 
+> 내 조건으로 예상 환급액을 보려면 [2026년 귀속 연말정산 환급 계산기](/tools/year-end-tax-calculator/)에 총급여와 공제 항목을 넣어 보세요.
+
 ## 정리
 
 - **소득공제** 는 과세표준을 줄여 **공제액 × 내 세율** 만큼, **세액공제** 는 세금을 **직접** 줄입니다.
